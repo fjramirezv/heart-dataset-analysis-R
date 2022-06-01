@@ -12,6 +12,7 @@ Francisco José Ramírez Vicente
 # Ficheros
 
 **CARPETA Codigo_y_Datos**
+
 **PRA2_TipologiaDatos.Rmd**
 solución en lenguaje R de la práctica. Análisis del dataset heart disease
 **heart.csv.csv**  
