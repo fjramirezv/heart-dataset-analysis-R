@@ -15,9 +15,11 @@ Francisco José Ramírez Vicente
 
 * **PRA2_TipologiaDatos.Rmd** solución en lenguaje R de la práctica. Análisis del dataset heart disease
 
-* **heart.csv** dataset original completo heart disease
+**heart.csv** 
+dataset original completo heart disease
 
-* **heart_modidficado.csv** dataset modificado con cambios en los datos de heart disease
+**heart_modidficado.csv** 
+dataset modificado con cambios en los datos de heart disease
 
 **README.md**   
 este fichero
