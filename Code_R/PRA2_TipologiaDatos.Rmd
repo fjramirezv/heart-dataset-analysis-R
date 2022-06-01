@@ -1,0 +1,397 @@
+---
+title: 'Tipología y ciclo de vida de los datos'
+author: "Autor: Francisco Jose Ramirez Vicente"
+date: "Mayo 2022"
+output:
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+  word_document: default
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+#tinytex::install_tinytex()
+#tinytex::tlmgr_install("pdfcrop")
+options(repos="https://cran.rstudio.com" )
+#library(dplyr)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# https://cran.r-project.org/web/packages/ggplot2/index.html
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+# https://cran.r-project.org/web/packages/dplyr/index.html
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+```
+```{r}
+install.packages("hms")
+install.packages("zip")
+install.packages('car')
+install.packages("zip")
+install.packages("caTools")
+install.packages("ggcorrplot")
+install.packages("rpart.plot")
+```
+
+**********
+#PREGUNTA 1
+**********
+Descripción del dataset. ¿Por qué es importante y qué pregunta/problema pretende
+responder?
+
+El dataset elegido es:
+https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset
+El cual viene de la siguiente fuente de datos:
+https://archive.ics.uci.edu/ml/datasets/heart+disease
+
+Este dataset es importante ya que nos permite, basándonos en una muestra previa, detectar posibles enfermedades caridiacas partiendo de una serie de atributos iniciales. De este modo si detectamos en un nuevo paciente estos mismos síntomas podríamos detectar algún tipo de enfermedad del corazón. La pregunta que pretende responder es si un determinado paciente, con unos atributos concretos, tiene o no tiene predisposición a tener una enfermedad cardíaca basándose en los parámetros de entrada.
+
+**********
+#PREGUNTA 2
+**********
+Integración y selección de los datos de interés a analizar. Puede ser el resultado de
+adicionar diferentes datasets o una subselección útil de los datos originales, en base al
+objetivo que se quiera conseguir.
+
+Vamos a analizar todos los atributos de entrada para de esta forma, entenderlos bien y poder realizar las operaciones posteriores de análisis:
+  
+Cargamos el dataset y obtenemos el número de files y luego la estructura de los datos para una primera referencia:
+
+```{r}
+DataHeart <- read.csv('heart.csv',stringsAsFactors = FALSE)
+filas=dim(DataHeart)[1]
+filas
+str(DataHeart)
+```
+En principio todo el dataset es interesante para realizar los análisis, aunque luego en la fase de análisis veremos cuáles son los más importantes para obtener resultados relevantes.
+Por otro lado, analizamos los diferentes atributos para entenderlos antes de comenzar con su análisis:
+
+**age**
+    Valor número y entero. Edad del paciente
+    
+**sex** 
+    Valor número y entero. Valor Binario, 1=male 0=female
+    
+**cp**
+    Valor número y entero. CP significa Chest Pain (dolor de pecho) 0:angina típica, 1:angina atípica, 2:dolor no anginal y 3:asintomático.
+
+**trestbps**
+    Valor número y entero. Presión arterial en reposo (mmg/Hg)
+
+**chol**
+    Valor número y entero. Colesterol sérico (mg/dl)
+    
+**fbs**
+    Valor número y entero. Aumento de azúcar en sangre, valor binario, si es mayor de 120 mg/dl, entonces 1=true 0=false
+
+**restecg**
+    Valor número y entero. Resultados de electrocardiogramas en reposo. Valores, 0:normal, 1:anomalía ST-T y 2:probable hipertrofía ventricular.
+
+**thalac**
+    Valor número y entero. Máximo número de pulsaciones en bmp.
+    
+**exang**
+    Valor número y entero. Angina inducida por ejercicio.
+    
+**oldpeak**
+    Valor número y decimal. Depresión del ST inducida por ejercicio en relación con el descanso.
+    
+**slope**
+    Valor número y entero. Pendiente del segmento ST (pico de ejercicio). Puede tener los valores 1:pendiente ascendente, 2:plano y 3:pendiente descendente 
+    
+**ca**
+    Valor número y entero. número de vasos principales (de 0 a 3) que se han coloreado por fluoroscopia.
+    
+**thal**
+    Valor número y entero. Tenemos los valores 3:normal, 6:defecto y 7:defecto reversible.
+    
+**target**
+    Valor número y entero. Binario, se utiliza para la predicción.
+
+**********
+PREGUNTA 3
+**********
+Limpieza de los datos
+
+Como paso preliminar, vamos a modificar las columnas con nombres que podamos identificar de forma más amigable:
+
+```{r}
+names(DataHeart)[names(DataHeart) == "age"] <- "Edad_Paciente"
+names(DataHeart)[names(DataHeart) == "sex"] <- "Genero"
+names(DataHeart)[names(DataHeart) == "cp"] <- "Dolor_Pecho"
+names(DataHeart)[names(DataHeart) == "trestbps"] <- "Presion_Arterial_Reposo"
+names(DataHeart)[names(DataHeart) == "chol"] <- "Colesterol_Serico"
+names(DataHeart)[names(DataHeart) == "fbs"] <- "Aumento_azucar_sangre"
+names(DataHeart)[names(DataHeart) == "restecg"] <- "ECG_Descanso"
+names(DataHeart)[names(DataHeart) == "thalach"] <- "Pulsaciones_max_corazon_bpm"
+names(DataHeart)[names(DataHeart) == "exang"] <- "Angina_inducida_ejercicio"
+names(DataHeart)[names(DataHeart) == "oldpeak"] <- "Depresion_ST_ejercicio"
+names(DataHeart)[names(DataHeart) == "slope"] <- "Pico_ejercicio_ST"
+names(DataHeart)[names(DataHeart) == "ca"] <- "Num_vasos_floururo"
+names(DataHeart)[names(DataHeart) == "thal"] <- "Thalassemia"
+names(DataHeart)[names(DataHeart) == "target"] <- "Prediccion_Diagnostico"
+```
+
+Por otro lado, hay varios valores que se tratan como enteros (int) en vez de factores. Por ejemplo, los campos "Dolor_Pecho", "Aumento_azucar_sangre", "ECG_Descanso", "Num_vasos_floururo", "Thalassemia", "Prediccion_Diagnostico" y "Genero" deberían ser tratados como factores en vez de enteros. Para realizar dicha conversión, podemos usar el siguiente código:
+
+```{r}
+# Primero almacenamos los datos originales en otro dataset
+nuevoDataHeart <- DataHeart %>% 
+  # Comenzamos con la conversión de los datos de int a factor
+  mutate(Genero = if_else(Genero == 1, "hombre", "mujer"),
+         Angina_inducida_ejercicio = if_else(Angina_inducida_ejercicio == 1, "si" ,"no"),
+         Pico_ejercicio_ST = as.factor(Pico_ejercicio_ST),
+         Num_vasos_floururo = as.factor(Num_vasos_floururo),
+         Thalassemia = as.factor(Thalassemia),
+         ECG_Descanso=if_else(ECG_Descanso == 0, "normal",
+                           if_else(ECG_Descanso == 1, "anomalia", "probable hipertrofia")),
+         Dolor_Pecho = if_else(Dolor_Pecho == 0, "angina tipica",
+                      if_else(Dolor_Pecho == 1, "angina atipica", 
+                              if_else(Dolor_Pecho==2,"dolor no anginal","asintomatico"))),
+         Pico_ejercicio_ST = as.factor(Pico_ejercicio_ST),
+         Num_vasos_floururo = as.factor(Num_vasos_floururo),
+         Thalassemia = as.factor(Thalassemia),
+         Prediccion_Diagnostico = if_else(Prediccion_Diagnostico == 1, "SI", "NO")
+         ) %>% 
+  mutate_if(is.character, as.factor) %>% 
+  dplyr::select(Genero,Angina_inducida_ejercicio,Pico_ejercicio_ST,Num_vasos_floururo,Thalassemia,ECG_Descanso,Dolor_Pecho,Pico_ejercicio_ST,Num_vasos_floururo,Thalassemia,Prediccion_Diagnostico,everything())
+```
+
+Comprobamos que los cambios se han aplicado correctamente comparando los dos datasets:
+
+```{r}
+head(DataHeart)
+head(nuevoDataHeart)
+```
+
+Aqui almaceno el nuevo dataset con los cambios relaizados
+ <!-- write.csv(nuevoDataHeart,"/Users/fjramirezv/codigo/PRA2_UOC/heart_modificado.csv", row.names = FALSE) -->
+ 
+
+3.1. ¿Los datos contienen ceros o elementos vacíos?
+Para comprobarlo realizamos el siguiente análsis de los datos:
+
+```{r}
+colSums(is.na(nuevoDataHeart))
+colSums(nuevoDataHeart=="")
+```
+Vemos que no hay elementos vacios ni nulos en el dataset
+
+3.1. Identifica y gestiona los valores extremos
+
+En primer lugar vemos con el comando summary un resumen de todos los valores, con sus máximos, mínimos, etc:
+
+```{r}
+summary(nuevoDataHeart)
+```
+
+Podemos identificar los outliers y los valores extremos de una manera gráfica usando bloxplot:
+
+```{r}
+valores_extremos <- boxplot(nuevoDataHeart %>% select_if(is.numeric), main = 'Datos númericos y posibles outliers',ylab = 'valor',las = 2, col = c("violetred", "steelblue1", "salmon1","palegoldenrod", "olivedrab", "orange"), border="brown",cex.axis = 0.5)
+```
+Podemos identificar a simple vista varios valores outliers (círculos rojos) y para mostrarlos podemos visualizar los datos:
+
+```{r}
+valores_extremos
+```
+
+Los valores extremos los podemos encontrar en $out y podemos confirmar 20:
+172.0 178.0 180.0 180.0 200.0 174.0 192.0 178.0 180.0 417.0 564.0 394.0 407.0 409.0 71.0   4.2   6.2   5.6   4.2   4.4
+
+Estos valores los podríamos sustituir por ejemplo los máximos con la mediana y los mínimos con la media. En este caso no aplicaré estos cambios por no tener un efecto significativo en el resto del análisis.
+
+**********
+PREGUNTA 4
+**********
+Análisis de los datos
+
+4.1. Selección de los grupos de datos que se quieren analizar/comparar (p. e., si se
+van a comparar grupos de datos, ¿cuáles son estos grupos y qué tipo de análisis
+se van a aplicar?)
+
+El primer grupo de datos que podríamos comparar es por género y ver cuáles tienen diagnosticados una enfermedad de corazón y cuantos no:
+
+```{r}
+heart = nuevoDataHeart 
+levels(heart$Prediccion_Diagnostico) = c("Sin enfermedad","Con enfermedad")
+levels(heart$Genero) = c("mujer","hombre","")
+mosaicplot(heart$Genero ~ heart$Prediccion_Diagnostico, col = subs_pal,
+           main="Enfermedad por géneros", shade=FALSE,color=TRUE,
+           xlab="Género", ylab="Enfermedad del corazón")
+```
+Destacar que por géneros, es el hombre el que tiene más enfermedades de corazón si tenemos en cuenta los parámetros del datset.
+
+A partir de este punto podríamos elegir muchos grupos de datos. es decir, prácticamente cada característica de cada elemento del dataset se podría ir agrupando y comparando con el resto para sacar conlusiones de relación. Pero por restricciones en la entrega, me centraré sólo en uno más pero luego desarrollaré más análisis en el punto 4.3.
+
+Por ejemplo, sin nos centramos en los dolores de pecho y la edad:
+
+```{r}
+ggplot(nuevoDataHeart, aes(x=Edad_Paciente, fill=Prediccion_Diagnostico)) + geom_bar()+scale_fill_manual(values=c("green", "red"))
+```
+
+Podemos destacar de esta gráfica que la edad donde más casos se diagnostican está comprendida entre los 40 y 60 años aproximadamente (hombres y mujeres)
+
+Ahora podríamos ir comparando diferentes grupos. Por ejemplo, podríamos comprobar los niveles de colesterol, con la edad y ver posibles distribuciones de casos positivos de enfermedad:
+
+```{r}
+ggplot(nuevoDataHeart,aes(x = Edad_Paciente, y = Colesterol_Serico,color=Prediccion_Diagnostico, size = factor(Colesterol_Serico))) + 
+    geom_point(alpha=0.3) + guides(size=FALSE) + xlab("Edad") + ylab("Colesterol") + ggtitle("Edad vs Colesterol") 
+```
+Vemos que entre rangos de colesterol entre 200 y 350 y además entre una franja de edad de entre 50 y 65 años es cuando más casos de enferdad se diagnostican.
+
+Estos son sólo tres ejemplos de todos los posibles agrupamientos que podrímos realizar.
+
+
+4.2. Comprobación de la normalidad y homogeneidad de la varianza.
+
+
+Comprobación de la normalidad:
+
+Para comprobarlo comprobaré qué género tiene más posibilidades de diagnosticar una enfermedad de corazón (al igual que hice en el punto 4.1). Utilizaré el dataset original ya que tiene los valores numéricos.
+
+Comenzamos por los hombres:
+
+```{r}
+library(car)
+DataHeart_hombres_con_enfermedad <- DataHeart %>% filter(Prediccion_Diagnostico == 1)
+DataHeart_hombres_edad <- DataHeart_hombres_con_enfermedad %>% filter(Genero==1) 
+DataHeart_hombres_edad$Edad_Paciente %>% qqPlot(dist="norm", xlab = "Edad de los hombres con diagnóstico de enfedad cardiaca")
+```
+Podemos ver que se encuentra repartida entre los 45 y los 81 años
+Vamos a ver ahora el de las mujeres:
+
+```{r}
+library(car)
+DataHeart_mujeres_con_enfermedad <- DataHeart %>% filter(Prediccion_Diagnostico == 1)
+DataHeart_mujeres_edad <- DataHeart_mujeres_con_enfermedad %>% filter(Genero==0) 
+DataHeart_mujeres_edad$Edad_Paciente %>% qqPlot(dist="norm", xlab = "Edad de las mujeres con diagnóstico de enfedad cardiaca")
+```
+En este caso vemos que está comprendida entre los 53 y los 65 años.
+
+En ambos casos podemos observar que están dentro del rango de confianza asignado (zona azul) y teniendo en cuenta la población de ambos podemos asumir que es normalmente distribuida.
+
+Comprobación de la homogeneida de la varianza:
+Utilizaré el método de Levene donde la variable1 será hombre y la variable2 será mujer.
+
+```{r}
+#library(car)
+leveneTest(Edad_Paciente ~ Genero, data = nuevoDataHeart)
+```
+
+Observando los resultados podemos ver que la varianza entre la edad de los géneros tiene un valor similar.
+
+4.3. Aplicación de pruebas estadísticas para comparar los grupos de datos. En función
+de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,
+correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis
+diferentes.
+
+Matriz Correlación
+
+El primer método de análisis que voy a realizar es una Matriz de correlación, ya que nos dará una primera aproximación de posibles relaciones entre las catacterísticas y los diagnósticos de enfermedad. El primer paso será utilizar las variables no categóricas que tenemos:
+
+```{r}
+DataHeart_MatrixCorr <- cor(nuevoDataHeart[,9:14])
+DataHeart_MatrixCorr
+```
+
+```{r}
+cor<-cor(DataHeart_MatrixCorr, method="pearson") 
+print(cor, digits= 1)
+
+library(ggcorrplot)
+ggcorrplot(cor,lab = T)
+```
+A simple vista, podemos ver relaciones de nivel positivo entre por ejemplo la presión arterial en reposo con la edad.
+Lo mismo ocurre con la edad y la depresión ST ejercicio, es decir esta aumenta con la edad.
+
+Regresión logística
+
+Para este proceso, primero dividimos el dataset para el testeo (test) y el entrenamiento (training).
+De esta forma podemos predecir qué pacientes pueden llegar a tener una enfermedad de corazón.
+
+```{r}
+set.seed(100) 
+library(caTools)
+dataset_heart_split=sample.split(nuevoDataHeart$Prediccion_Diagnostico, SplitRatio = 0.75)
+```
+Separamos en dos datasets para entrenamiento y para test:
+
+```{r}
+Train=subset(nuevoDataHeart,dataset_heart_split == TRUE)
+Test=subset(nuevoDataHeart,dataset_heart_split == FALSE)
+```
+
+Creamos el modelo:
+
+```{r}
+Modelo_Heart<-glm(Prediccion_Diagnostico~.,data= Train,family = "binomial")
+Train$Prediccion<-fitted(Modelo_Heart)
+head(select(Train, Prediccion_Diagnostico, Prediccion))
+```  
+Nota: sólo muestro los primeros valores por limitación del documento.
+Comparando la columna "Preddiccion_Diagnostico" y la nueva que hemos añadido con la prediccion podemos comprobar que se ajusta a los datos del dataset y la predicción. Por ejemplo el paciente 1 tiene diagnosticada una enfermedad y la predicción que hemos realizado le asigna un 95% (0.95) de posibilidades de tenerla. 
+
+Arbol de decisión
+
+Reutilizamos los datasets creados antes para Train y Test, inicializamos a NULL la columna de predicción:
+
+```{r}
+install.packages("rpart.plot")
+library(rpart)
+Train$Prediccion<-NULL
+Test$Prediccion<-NULL
+```
+
+```{r}
+tree<-rpart(Prediccion_Diagnostico~.,method = "class",data = Train)
+library(rpart.plot)
+rpart.plot(tree)
+```
+En este árbol de ejemplo comenzamos por el nodo principal donde podemos ver la probabilidad de tener enfermedad mostrando la probabilidad total (0.54%). Luego preguntamos si Dolor_Pecho = angina tipica y así vamos recorriendo los diferentes nodos comprobando las probabilidades hasta llegar a los nodos finales donde aparecerá un posible diagónstico.
+
+**********
+PREGUNTA 5
+**********
+Esta pregunta ha ido respondiendo entre los apartados anteriores  
+  
+**********
+PREGUNTA 6
+**********
+¿Cuáles son las conclusiones?
+El dataset heart disease contiene información muy útil a la hora de detectar posibles enfermedades de corazón. El principal problema al cual nos encotramos es a la normalización y el entendimiento de los conceptos médicos de cada característica del dataset. Una vez realizada esta fase de limpieza, los cálculos realizados permiten encontrar modelos con una suficiente garantía de diagnosticar los posibles casos fuera de este dataset. 
+
+En una primera fase de análisis (punto 4.1) hemos encontrado:
+ * El género masculino es el que tiene más diagnósticos positivos de enferdad
+ * La edad comprendida entre los 40 y los 60 años es la más propensa a tener un diagnostico positivo de enfermedad en ambos sexos.
+ * Entre rangos de colesterol de 200 y 350 y además entre una franja de edad de entre 50 y 65 años es cuando más casos de enferdad se diagnostican.
+ 
+En una segunda fase de análisis (predicción, punto 4.3) encontramos:
+ * Matriz de correlación que nos muestra las relaciones entre los valores y tener o no enfermedad
+ * La regresión lineal nos permite calcular nuevos casos. Los resultados con las muestras obtenidas son generalmente positivos (habría que hacer un análsis de falsos positivos y negativos más profundo).
+ * Finalmente, el árbol de decisión nos permitirá obtener una predicción siguiendo el camino de los valores a estudiar.
+
+¿Los resultados pueden responder al problema?
+Como hemos podido observar, en la parte de análisis encontramos herramientas suficientes para responder al problema para nuevos casos que se tengamos que analiza (4.3). Todos ellos aproximan con un alto porcentaje de acierto las opciones de diagnosticar un caso basándonos en las características de cada inviduo del dataset.
+
+
+**********
+PREGUNTA 7
+**********
+Se publica el código fuente
+
+**************
+PARTICIPANTES:
+**************
+
+Contribuciones                    Firma
+* Investigación previa            FJRV
+* Redacción de las respuestas     FJRV
+* Desarrollo Código               FJRV
+FJRV: Francisco José Ramírez Vicente
