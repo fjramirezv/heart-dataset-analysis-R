@@ -11,9 +11,14 @@ Francisco José Ramírez Vicente
 
 # Ficheros
 
-**PRA2_TipologiaDatos.Rmd**   
-solución en lenguaje R de la práctica. A
-Análisis del dataset heart disease
+CARPETA:
+**Codigo_y_Datos**
+    **PRA2_TipologiaDatos.Rmd**   
+    solución en lenguaje R de la práctica. Análisis del dataset heart disease
+    **heart.csv.csv**  
+    dataset original completo heart disease
+    **heart_modidficado.csv**  
+    dataset modificado con cambios en los datos de heart disease
 
 **README.md**   
 este fichero
@@ -24,9 +29,6 @@ Licencia
 **PRA2_Tipologia_Datos_Fran_Ramirez.pdf**          
 Documento en PDF con las soluciones y el código R anterior ejecutado.
 Aquí se responden a las preguntas formuladas en la práctica.
-
-**heart.csv.csv**  
-dataset completo heart disease
 
 # Requisitos de instalación y ejecución
 **R-Studio**
